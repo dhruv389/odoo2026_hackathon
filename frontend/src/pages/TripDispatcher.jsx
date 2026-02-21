@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
+import ToastContainer from '../components/ui/ToastContainer';
 import { Plus, MapPin, User, Truck, Package, Calendar, ChevronRight } from 'lucide-react';
 import { tripAPI, vehicleAPI, driverAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
 
 export default function TripDispatcher() {
   const [trips, setTrips] = useState([]);
@@ -20,6 +22,8 @@ export default function TripDispatcher() {
     distance: '',
     fuel: ''
   });
+
+  const { toasts, removeToast, toast } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -50,7 +54,7 @@ export default function TripDispatcher() {
       const selectedVehicle = vehicles.find(v => v._id === form.vehicle);
       
       if (Number(form.cargo) > selectedVehicle.capacity) {
-        alert(`Cargo weight (${form.cargo} kg) exceeds vehicle capacity (${selectedVehicle.capacity} kg)`);
+        toast.warning(`Cargo weight (${form.cargo} kg) exceeds vehicle capacity (${selectedVehicle.capacity} kg)`);
         return;
       }
 
@@ -62,9 +66,10 @@ export default function TripDispatcher() {
       await fetchData();
       setModalOpen(false);
       setForm({ vehicle: '', driver: '', cargo: '', origin: '', destination: '', distance: '', fuel: '' });
+      toast.success('Trip created and dispatched successfully!');
     } catch (error) {
       console.error('Error creating trip:', error);
-      alert('Failed to create trip: ' + error.message);
+      toast.error('Failed to create trip: ' + error.message);
     }
   };
 
@@ -72,8 +77,10 @@ export default function TripDispatcher() {
     try {
       await tripAPI.updateStatus(id, status);
       await fetchData();
+      toast.success(`Trip status updated to ${status}!`);
     } catch (error) {
       console.error('Error updating trip status:', error);
+      toast.error('Failed to update trip status: ' + error.message);
     }
   };
 
@@ -231,6 +238,8 @@ export default function TripDispatcher() {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </Layout>
   );
 }

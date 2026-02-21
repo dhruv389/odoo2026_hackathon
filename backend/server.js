@@ -17,8 +17,53 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000; 
 
+// CORS Configuration - Handle all deployment scenarios
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:4173',
+  'https://odoo2026-hackathon.onrender.com',
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list or matches pattern
+    if (allowedOrigins.indexOf(origin) !== -1 || 
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1') ||
+        origin.includes('.vercel.app') ||
+        origin.includes('.netlify.app') ||
+        origin.includes('.onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins in production (can be restricted later)
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
+// Handle pre-flight requests for all routes
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept');
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import Modal from '../components/ui/Modal';
+import ToastContainer from '../components/ui/ToastContainer';
 import { Plus, Fuel, DollarSign, Calendar, Truck, TrendingUp } from 'lucide-react';
 import { expenseAPI, tripAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
 
 export default function ExpenseFuel() {
   const [expenses, setExpenses] = useState([]);
@@ -16,6 +18,8 @@ export default function ExpenseFuel() {
     distance: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  const { toasts, removeToast, toast } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -54,9 +58,10 @@ export default function ExpenseFuel() {
       await fetchData();
       setModalOpen(false);
       setForm({ trip: '', liters: '', cost: '', distance: '', date: new Date().toISOString().split('T')[0] });
+      toast.success('Fuel expense recorded successfully!');
     } catch (error) {
       console.error('Error creating expense:', error);
-      alert('Failed to create expense: ' + error.message);
+      toast.error('Failed to create expense: ' + error.message);
     }
   };
 
@@ -192,6 +197,8 @@ export default function ExpenseFuel() {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </Layout>
   );
 }

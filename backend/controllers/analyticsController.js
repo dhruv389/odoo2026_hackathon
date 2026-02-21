@@ -83,6 +83,18 @@ export const getAnalytics = async (req, res) => {
       };
     });
 
+    // Vehicle type distribution
+    const vehiclesByType = vehicles.reduce((acc, v) => {
+      const type = v.type || 'Unknown';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+
+    const vehicleTypeData = Object.entries(vehiclesByType).map(([name, value]) => ({
+      name,
+      value
+    }));
+
     // Monthly data (mock for now - in production, aggregate by month)
     const monthlyData = [
       { month: "Sep", revenue: 820000, fuel: 142000, maintenance: 38000 },
@@ -102,6 +114,7 @@ export const getAnalytics = async (req, res) => {
           totalOperationalCost: totalFuelCost + totalMaintenanceCost,
         },
         fuelEfficiency: fuelEfficiency.filter((f) => f.efficiency > 0),
+        vehiclesByType: vehicleTypeData,
         monthly: monthlyData,
       },
     });

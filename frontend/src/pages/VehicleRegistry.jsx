@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
+import ToastContainer from '../components/ui/ToastContainer';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { Plus, Search, Filter, Truck, Edit, Trash2, Gauge, Weight, MoreVertical } from 'lucide-react';
 import { vehicleAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 
 const typeColors = {
   Truck: 'text-cyan-400 bg-cyan-500/10',
@@ -20,6 +24,9 @@ export default function VehicleRegistry() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState({ name: '', plate: '', type: 'Truck', capacity: '', odometer: '', fuel: 'Diesel', acquisitionCost: '' });
+
+  const { toasts, removeToast, toast } = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
     fetchVehicles();
@@ -74,27 +81,38 @@ export default function VehicleRegistry() {
 
       if (editTarget) {
         await vehicleAPI.update(editTarget._id, vehicleData);
+        toast.success('Vehicle updated successfully!');
       } else {
         await vehicleAPI.create(vehicleData);
+        toast.success('Vehicle created successfully!');
       }
       
       await fetchVehicles();
       setModalOpen(false);
     } catch (error) {
       console.error('Error saving vehicle:', error);
-      alert('Failed to save vehicle: ' + error.message);
+      toast.error('Failed to save vehicle: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this vehicle?')) return;
+    const confirmed = await confirm({
+      title: 'Delete Vehicle',
+      message: 'Are you sure you want to delete this vehicle? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
     
     try {
       await vehicleAPI.delete(id);
       await fetchVehicles();
+      toast.success('Vehicle deleted successfully!');
     } catch (error) {
       console.error('Error deleting vehicle:', error);
-      alert('Failed to delete vehicle: ' + error.message);
+      toast.error('Failed to delete vehicle: ' + error.message);
     }
   };
 
@@ -257,6 +275,9 @@ export default function VehicleRegistry() {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </Layout>
   );
 }

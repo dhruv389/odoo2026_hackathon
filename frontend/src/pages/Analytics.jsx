@@ -43,7 +43,7 @@ export default function Analytics() {
           { name: 'Available', value: dashData.fleet.available },
           { name: 'In Shop', value: dashData.fleet.inShop }
         ].filter(v => v.value > 0) : [],
-        vehiclesByType: [],
+        vehiclesByType: analyticsData?.vehiclesByType || [],
         topDrivers: []
       };
       

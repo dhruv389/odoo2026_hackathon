@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
+import ToastContainer from '../components/ui/ToastContainer';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { Plus, Search, User, Award, Calendar, Edit, Trash2 } from 'lucide-react';
 import { driverAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 
 export default function DriverProfiles() {
   const [drivers, setDrivers] = useState([]);
@@ -18,6 +22,9 @@ export default function DriverProfiles() {
     category: 'LMV',
     safety: 100
   });
+
+  const { toasts, removeToast, toast } = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
     fetchDrivers();
@@ -66,27 +73,38 @@ export default function DriverProfiles() {
 
       if (editTarget) {
         await driverAPI.update(editTarget._id, driverData);
+        toast.success('Driver updated successfully!');
       } else {
         await driverAPI.create(driverData);
+        toast.success('Driver created successfully!');
       }
 
       await fetchDrivers();
       setModalOpen(false);
     } catch (error) {
       console.error('Error saving driver:', error);
-      alert('Failed to save driver: ' + error.message);
+      toast.error('Failed to save driver: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this driver?')) return;
+    const confirmed = await confirm({
+      title: 'Delete Driver',
+      message: 'Are you sure you want to delete this driver? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await driverAPI.delete(id);
       await fetchDrivers();
+      toast.success('Driver deleted successfully!');
     } catch (error) {
       console.error('Error deleting driver:', error);
-      alert('Failed to delete driver: ' + error.message);
+      toast.error('Failed to delete driver: ' + error.message);
     }
   };
 
@@ -225,6 +243,9 @@ export default function DriverProfiles() {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </Layout>
   );
 }

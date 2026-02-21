@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
-import { Plus, Wrench, Calendar, DollarSign, Truck } from 'lucide-react';
+import ToastContainer from '../components/ui/ToastContainer';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { Plus, Wrench, Calendar, DollarSign, Truck, CheckCircle, Trash2 } from 'lucide-react';
 import { maintenanceAPI, vehicleAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 
 export default function Maintenance() {
   const [logs, setLogs] = useState([]);
@@ -17,6 +21,9 @@ export default function Maintenance() {
     tech: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  const { toasts, removeToast, toast } = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
     fetchData();
@@ -47,9 +54,52 @@ export default function Maintenance() {
       await fetchData();
       setModalOpen(false);
       setForm({ vehicle: '', type: '', cost: '', tech: '', date: new Date().toISOString().split('T')[0] });
+      toast.success('Maintenance log created successfully!');
     } catch (error) {
       console.error('Error creating maintenance log:', error);
-      alert('Failed to create maintenance log: ' + error.message);
+      toast.error('Failed to create maintenance log: ' + error.message);
+    }
+  };
+
+  const handleComplete = async (id) => {
+    const confirmed = await confirm({
+      title: 'Complete Maintenance',
+      message: 'Mark this maintenance as completed? The vehicle will become available.',
+      type: 'success',
+      confirmText: 'Complete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+    
+    try {
+      await maintenanceAPI.complete(id);
+      await fetchData();
+      toast.success('Maintenance completed! Vehicle is now available.');
+    } catch (error) {
+      console.error('Error completing maintenance:', error);
+      toast.error('Failed to complete maintenance: ' + error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const confirmed = await confirm({
+      title: 'Delete Maintenance Log',
+      message: 'Are you sure you want to delete this maintenance log? If in progress, the vehicle will become available.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+    
+    try {
+      await maintenanceAPI.delete(id);
+      await fetchData();
+      toast.success('Maintenance log deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting maintenance:', error);
+      toast.error('Failed to delete maintenance: ' + error.message);
     }
   };
 
@@ -90,7 +140,7 @@ export default function Maintenance() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/8">
-                {['Vehicle', 'Service Type', 'Date', 'Cost', 'Technician', 'Status'].map(h => (
+                {['Vehicle', 'Service Type', 'Date', 'Cost', 'Technician', 'Status', 'Actions'].map(h => (
                   <th key={h} className="text-left text-xs text-silver-500 uppercase tracking-widest font-mono pb-3 pr-4">{h}</th>
                 ))}
               </tr>
@@ -125,6 +175,26 @@ export default function Maintenance() {
                   <td className="py-3 pr-4 text-xs text-silver-400">{log.tech}</td>
                   <td className="py-3 pr-4">
                     <StatusBadge status={log.status} />
+                  </td>
+                  <td className="py-3 pr-4">
+                    <div className="flex items-center gap-2">
+                      {log.status === 'In Progress' && (
+                        <button
+                          onClick={() => handleComplete(log._id)}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                          title="Mark as Completed"
+                        >
+                          <CheckCircle size={14} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(log._id)}
+                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -172,6 +242,9 @@ export default function Maintenance() {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </Layout>
   );
 }

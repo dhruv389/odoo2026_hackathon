@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Zap, Eye, EyeOff, ArrowRight, Shield, Truck, BarChart3 } from 'lucide-react';
 import { authAPI } from '../services/api';
 
@@ -198,11 +198,21 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-            <span className="text-xs text-silver-600 font-mono">v2.4.1 — Production</span>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="text-xs text-emerald-400 font-mono">Systems Nominal</span>
+          <div className="mt-6 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-silver-600 font-mono">v2.4.1 — Production</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                <span className="text-xs text-emerald-400 font-mono">Systems Nominal</span>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-silver-500">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+                  Create one here
+                </Link>
+              </p>
             </div>
           </div>
         </div>

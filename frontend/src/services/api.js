@@ -1,5 +1,7 @@
 // API Base Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://odoo2026-hackathon.onrender.com/api';
+
+console.log('🔗 API Base URL:', API_BASE_URL);
 
 // Helper function to get auth token
 const getAuthToken = () => {
@@ -17,11 +19,12 @@ const handleResponse = async (response) => {
   return json.data !== undefined ? json.data : json;
 };
 
-// Helper function to make authenticated requests
-const fetchWithAuth = async (url, options = {}) => {
+// Helper function to make authenticated requests with retry logic
+const fetchWithAuth = async (url, options = {}, retries = 2) => {
   const token = getAuthToken();
   const headers = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     ...options.headers,
   };
 
@@ -29,12 +32,30 @@ const fetchWithAuth = async (url, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers,
+      mode: 'cors',
+      credentials: 'include',
+    });
 
-  return handleResponse(response);
+    return handleResponse(response);
+  } catch (error) {
+    // Retry logic for network errors
+    if (retries > 0 && (error.name === 'TypeError' || error.message.includes('Failed to fetch'))) {
+      console.warn(`Retrying request to ${url}... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      return fetchWithAuth(url, options, retries - 1);
+    }
+    
+    // Handle CORS errors
+    if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+      throw new Error('Unable to connect to server. Please check your internet connection or try again later.');
+    }
+    
+    throw error;
+  }
 };
 
 // Auth API
@@ -193,6 +214,12 @@ export const maintenanceAPI = {
     return fetchWithAuth(`/maintenance/${id}`, {
       method: 'PUT',
       body: JSON.stringify(maintenanceData),
+    });
+  },
+
+  complete: async (id) => {
+    return fetchWithAuth(`/maintenance/${id}/complete`, {
+      method: 'PUT',
     });
   },
 

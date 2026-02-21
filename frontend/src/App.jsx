@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import VehicleRegistry from './pages/VehicleRegistry';
 import TripDispatcher from './pages/TripDispatcher';
@@ -13,6 +14,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/vehicles" element={<VehicleRegistry />} />
         <Route path="/trips" element={<TripDispatcher />} />
