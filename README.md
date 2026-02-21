@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![FleetFlow](./FleetFlow%20-%208%20hours.excalidraw.png)
-
 **A comprehensive, rule-based digital hub for managing delivery fleets, monitoring driver safety, and tracking financial performance.**
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
