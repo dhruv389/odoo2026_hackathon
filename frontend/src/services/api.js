@@ -187,7 +187,7 @@ export const tripAPI = {
 
   updateStatus: async (id, status) => {
     return fetchWithAuth(`/trips/${id}/status`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify({ status }),
     });
   },

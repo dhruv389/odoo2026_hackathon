@@ -74,7 +74,11 @@ export default function Sidebar() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+          }}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-silver-500 hover:text-rose-400 hover:bg-rose-500/5 transition-all duration-200"
         >
           <LogOut size={14} />
