@@ -4,42 +4,47 @@ const vehicleSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: [true, "Vehicle name is required"],
       trim: true,
     },
-
-    licensePlate: {
+    plate: {
       type: String,
-      required: true,
+      required: [true, "License plate is required"],
       unique: true,
       uppercase: true,
       trim: true,
     },
-
     type: {
       type: String,
-      enum: ["truck", "van", "bike"],
+      enum: ["Truck", "Van", "Bike"],
       required: true,
     },
-
-    maxCapacity: {
+    capacity: {
       type: Number,
-      required: true,
+      required: [true, "Max capacity is required"],
     },
-
     odometer: {
       type: Number,
       default: 0,
     },
-
+    fuel: {
+      type: String,
+      enum: ["Diesel", "Petrol", "CNG", "Electric"],
+      default: "Diesel",
+    },
     acquisitionCost: {
       type: Number,
+      default: 0,
     },
-
     status: {
       type: String,
-      enum: ["available", "on_trip", "in_shop", "retired"],
-      default: "available",
+      enum: ["Available", "On Trip", "In Shop", "Retired"],
+      default: "Available",
+    },
+    driver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Driver",
+      default: null,
     },
   },
   { timestamps: true }

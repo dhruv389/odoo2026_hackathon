@@ -2,36 +2,43 @@ import mongoose from "mongoose";
 
 const expenseSchema = new mongoose.Schema(
   {
+    tripId: {
+      type: String,
+      required: [true, "Trip ID is required"],
+      trim: true,
+    },
     trip: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Trip",
-      required: true,
     },
-
-    driverName: {
+    driver: {
       type: String,
-      required: true,
+      required: [true, "Driver name is required"],
+      trim: true,
     },
-
+    vehicle: {
+      type: String,
+      required: [true, "Vehicle name is required"],
+      trim: true,
+    },
     distance: {
       type: Number,
-      required: true,
+      required: [true, "Distance is required"],
+      min: 0,
     },
-
-    fuelCost: {
+    liters: {
       type: Number,
-      default: 0,
+      required: [true, "Fuel liters is required"],
+      min: 0,
     },
-
-    miscExpense: {
+    cost: {
       type: Number,
-      default: 0,
+      required: [true, "Cost is required"],
+      min: 0,
     },
-
-    status: {
-      type: String,
-      enum: ["pending", "done"],
-      default: "done",
+    date: {
+      type: Date,
+      required: [true, "Date is required"],
     },
   },
   { timestamps: true }

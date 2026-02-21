@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Eye, EyeOff, ArrowRight, Shield, Truck, BarChart3 } from 'lucide-react';
+import { authAPI } from '../services/api';
 
 const roles = [
   { id: 'manager', label: 'Fleet Manager', desc: 'Full system access', icon: Truck },
@@ -12,12 +13,29 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [role, setRole] = useState('manager');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [email, setEmail] = useState('admin@fleetflow.io');
+  const [password, setPassword] = useState('fleet2024');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => navigate('/dashboard'), 1200);
+    setError('');
+
+    try {
+      const response = await authAPI.login(email, password);
+      
+      // Store token and user data
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,14 +139,33 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
             <div>
               <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Email</label>
-              <input className="input-field" type="email" placeholder="admin@fleetflow.io" defaultValue="admin@fleetflow.io" />
+              <input 
+                className="input-field" 
+                type="email" 
+                placeholder="admin@fleetflow.io" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div>
               <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Password</label>
               <div className="relative">
-                <input className="input-field pr-10" type={showPass ? 'text' : 'password'} placeholder="••••••••" defaultValue="fleet2024" />
+                <input 
+                  className="input-field pr-10" 
+                  type={showPass ? 'text' : 'password'} 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
                 <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-silver-500 hover:text-silver-300">
                   {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>

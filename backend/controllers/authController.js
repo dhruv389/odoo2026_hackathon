@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 // Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, process.env.JWT_SECRET || "fleetflow_secret_key_2024", {
     expiresIn: "7d",
   });
 };
@@ -26,7 +26,7 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password,
-      role,
+      role: role || "dispatcher",
     });
 
     res.status(201).json({
@@ -80,6 +80,30 @@ export const loginUser = async (req, res) => {
         role: user.role,
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================
+// GET CURRENT USER
+// ==========================
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================
+// GET ALL USERS (Admin only)
+// ==========================
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json({ success: true, data: users });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

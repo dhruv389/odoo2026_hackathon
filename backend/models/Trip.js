@@ -5,42 +5,43 @@ const tripSchema = new mongoose.Schema(
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Vehicle",
-      required: true,
+      required: [true, "Vehicle is required"],
     },
-
     driver: {
-      type: String, // we simplify for now
-      required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Driver",
+      required: [true, "Driver is required"],
     },
-
-    cargoWeight: {
+    cargo: {
       type: Number,
-      required: true,
+      required: [true, "Cargo weight is required"],
     },
-
     origin: {
       type: String,
-      required: true,
+      required: [true, "Origin is required"],
+      trim: true,
     },
-
     destination: {
       type: String,
-      required: true,
+      required: [true, "Destination is required"],
+      trim: true,
     },
-
-    estimatedFuelCost: {
-      type: Number,
-      required: true,
-    },
-
     distance: {
-      type: Number, // used later in expense calculation
+      type: String,
+      default: "—",
     },
-
+    fuel: {
+      type: String,
+      default: "—",
+    },
     status: {
       type: String,
-      enum: ["draft", "dispatched", "on_way", "completed", "cancelled"],
-      default: "draft",
+      enum: ["Draft", "Dispatched", "Completed", "Cancelled"],
+      default: "Draft",
+    },
+    date: {
+      type: Date,
+      default: Date.now,
     },
   },
   { timestamps: true }

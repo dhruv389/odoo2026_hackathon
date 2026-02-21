@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
 import { Plus, Search, Filter, Truck, Edit, Trash2, Gauge, Weight, MoreVertical } from 'lucide-react';
-import { vehicles as initialVehicles } from '../data/mockData';
+import { vehicleAPI } from '../services/api';
 
 const typeColors = {
   Truck: 'text-cyan-400 bg-cyan-500/10',
@@ -12,13 +12,29 @@ const typeColors = {
 };
 
 export default function VehicleRegistry() {
-  const [vehicles, setVehicles] = useState(initialVehicles);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [form, setForm] = useState({ name: '', plate: '', type: 'Truck', capacity: '', odometer: '', fuel: 'Diesel' });
+  const [form, setForm] = useState({ name: '', plate: '', type: 'Truck', capacity: '', odometer: '', fuel: 'Diesel', acquisitionCost: '' });
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      const data = await vehicleAPI.getAll();
+      setVehicles(data);
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = vehicles.filter(v => {
     const matchSearch = v.name.toLowerCase().includes(search.toLowerCase()) || v.plate.toLowerCase().includes(search.toLowerCase());
@@ -27,20 +43,70 @@ export default function VehicleRegistry() {
     return matchSearch && matchType && matchStatus;
   });
 
-  const openNew = () => { setEditTarget(null); setForm({ name: '', plate: '', type: 'Truck', capacity: '', odometer: '', fuel: 'Diesel' }); setModalOpen(true); };
-  const openEdit = (v) => { setEditTarget(v); setForm({ name: v.name, plate: v.plate, type: v.type, capacity: v.capacity, odometer: v.odometer, fuel: v.fuel }); setModalOpen(true); };
-
-  const handleSave = () => {
-    if (editTarget) {
-      setVehicles(vs => vs.map(v => v.id === editTarget.id ? { ...v, ...form, capacity: Number(form.capacity), odometer: Number(form.odometer) } : v));
-    } else {
-      const newV = { id: `VH-00${vehicles.length + 1}`, status: 'Available', driver: null, ...form, capacity: Number(form.capacity), odometer: Number(form.odometer) };
-      setVehicles(vs => [...vs, newV]);
-    }
-    setModalOpen(false);
+  const openNew = () => { 
+    setEditTarget(null); 
+    setForm({ name: '', plate: '', type: 'Truck', capacity: '', odometer: '', fuel: 'Diesel', acquisitionCost: '' }); 
+    setModalOpen(true); 
+  };
+  
+  const openEdit = (v) => { 
+    setEditTarget(v); 
+    setForm({ 
+      name: v.name, 
+      plate: v.plate, 
+      type: v.type, 
+      capacity: v.capacity, 
+      odometer: v.odometer, 
+      fuel: v.fuel,
+      acquisitionCost: v.acquisitionCost || ''
+    }); 
+    setModalOpen(true); 
   };
 
-  const handleDelete = (id) => setVehicles(vs => vs.filter(v => v.id !== id));
+  const handleSave = async () => {
+    try {
+      const vehicleData = {
+        ...form,
+        capacity: Number(form.capacity),
+        odometer: Number(form.odometer),
+        acquisitionCost: Number(form.acquisitionCost) || 0
+      };
+
+      if (editTarget) {
+        await vehicleAPI.update(editTarget._id, vehicleData);
+      } else {
+        await vehicleAPI.create(vehicleData);
+      }
+      
+      await fetchVehicles();
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Error saving vehicle:', error);
+      alert('Failed to save vehicle: ' + error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this vehicle?')) return;
+    
+    try {
+      await vehicleAPI.delete(id);
+      await fetchVehicles();
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      alert('Failed to delete vehicle: ' + error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout title="Vehicle Registry" subtitle="Asset lifecycle management">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="Vehicle Registry" subtitle="Asset lifecycle management">
@@ -81,72 +147,48 @@ export default function VehicleRegistry() {
         </div>
       </div>
 
-      {/* Vehicle Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Vehicle Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((v, i) => (
-          <div
-            key={v.id}
-            className="glass-card-hover p-5 group"
-            style={{ animation: `fadeUp 0.4s ease-out ${i * 60}ms both` }}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
+          <div key={v._id} className="glass-card p-5 hover:border-cyan-500/30 transition-all duration-300 group" style={{ animation: `fadeUp 0.3s ease-out ${i * 50}ms both` }}>
+            <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-obsidian-700 border border-white/8 flex items-center justify-center">
-                  <Truck size={18} className="text-silver-400" />
+                <div className={`w-10 h-10 rounded-xl ${typeColors[v.type]} flex items-center justify-center`}>
+                  <Truck size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-silver-100">{v.name}</h3>
+                  <h3 className="font-display text-sm silver-text">{v.name}</h3>
                   <p className="text-xs text-silver-500 font-mono">{v.plate}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg text-silver-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all opacity-0 group-hover:opacity-100">
-                  <Edit size={13} />
+                <button onClick={() => openEdit(v)} className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                  <Edit size={14} className="text-silver-500" />
                 </button>
-                <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded-lg text-silver-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100">
-                  <Trash2 size={13} />
+                <button onClick={() => handleDelete(v._id)} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <Trash2 size={14} className="text-red-400" />
                 </button>
               </div>
             </div>
 
-            {/* Type + Status */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[v.type] || 'text-silver-400 bg-white/5'}`}>{v.type}</span>
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-silver-500 flex items-center gap-1"><Weight size={12} /> Capacity</span>
+                <span className="text-silver-300 font-mono">{v.capacity.toLocaleString()} kg</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-silver-500 flex items-center gap-1"><Gauge size={12} /> Odometer</span>
+                <span className="text-silver-300 font-mono">{v.odometer.toLocaleString()} km</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-silver-500">Fuel Type</span>
+                <span className="text-silver-300">{v.fuel}</span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
               <StatusBadge status={v.status} />
-            </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-white/3 rounded-lg p-2.5 text-center">
-                <Weight size={12} className="text-silver-500 mx-auto mb-1" />
-                <p className="text-xs font-mono text-silver-200">{(v.capacity / 1000).toFixed(1)}t</p>
-                <p className="text-xs text-silver-600">Capacity</p>
-              </div>
-              <div className="bg-white/3 rounded-lg p-2.5 text-center">
-                <Gauge size={12} className="text-silver-500 mx-auto mb-1" />
-                <p className="text-xs font-mono text-silver-200">{v.odometer.toLocaleString()}</p>
-                <p className="text-xs text-silver-600">Odometer</p>
-              </div>
-              <div className="bg-white/3 rounded-lg p-2.5 text-center">
-                <div className="text-silver-500 text-xs mx-auto mb-1 font-mono">⛽</div>
-                <p className="text-xs font-mono text-silver-200">{v.fuel}</p>
-                <p className="text-xs text-silver-600">Fuel</p>
-              </div>
-            </div>
-
-            {/* Driver */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/5">
-              <span className="text-xs text-silver-600">Driver</span>
-              {v.driver
-                ? <span className="text-xs text-silver-300 font-medium">{v.driver}</span>
-                : <span className="text-xs text-silver-600 italic">Unassigned</span>
-              }
-            </div>
-
-            {/* ID tag */}
-            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs font-mono text-silver-700">{v.id}</span>
+              <span className={`text-xs px-2 py-1 rounded ${typeColors[v.type]}`}>{v.type}</span>
             </div>
           </div>
         ))}
@@ -154,51 +196,64 @@ export default function VehicleRegistry() {
 
       {filtered.length === 0 && (
         <div className="glass-card p-12 text-center">
-          <Truck size={40} className="text-silver-700 mx-auto mb-3" />
-          <p className="text-silver-500">No vehicles match your filters</p>
+          <Truck size={48} className="mx-auto text-silver-600 mb-3" />
+          <p className="text-silver-400">No vehicles found matching your filters</p>
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? 'Edit Vehicle' : 'Register New Vehicle'}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Vehicle Name / Model</label>
-              <input className="input-field" placeholder="e.g. Titan Hauler Pro" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+              <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Vehicle Name</label>
+              <input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Titan Hauler Pro" />
             </div>
             <div>
               <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">License Plate</label>
-              <input className="input-field" placeholder="e.g. MH-01-2024" value={form.plate} onChange={e => setForm({...form, plate: e.target.value})} />
+              <input className="input-field" value={form.plate} onChange={e => setForm({ ...form, plate: e.target.value })} placeholder="MH-01-2024" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Type</label>
-              <select className="input-field" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
-                {['Truck', 'Van', 'Bike'].map(t => <option key={t}>{t}</option>)}
+              <select className="input-field" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                <option>Truck</option>
+                <option>Van</option>
+                <option>Bike</option>
               </select>
-            </div>
-            <div>
-              <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Max Capacity (kg)</label>
-              <input className="input-field" type="number" placeholder="8000" value={form.capacity} onChange={e => setForm({...form, capacity: e.target.value})} />
             </div>
             <div>
               <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Fuel Type</label>
-              <select className="input-field" value={form.fuel} onChange={e => setForm({...form, fuel: e.target.value})}>
-                {['Diesel', 'Petrol', 'CNG', 'Electric'].map(f => <option key={f}>{f}</option>)}
+              <select className="input-field" value={form.fuel} onChange={e => setForm({ ...form, fuel: e.target.value })}>
+                <option>Diesel</option>
+                <option>Petrol</option>
+                <option>CNG</option>
+                <option>Electric</option>
               </select>
             </div>
           </div>
-          <div>
-            <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Current Odometer (km)</label>
-            <input className="input-field" type="number" placeholder="0" value={form.odometer} onChange={e => setForm({...form, odometer: e.target.value})} />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Max Capacity (kg)</label>
+              <input className="input-field" type="number" value={form.capacity} onChange={e => setForm({ ...form, capacity: e.target.value })} placeholder="8000" />
+            </div>
+            <div>
+              <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Odometer (km)</label>
+              <input className="input-field" type="number" value={form.odometer} onChange={e => setForm({ ...form, odometer: e.target.value })} placeholder="84320" />
+            </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button onClick={handleSave} className="btn-primary flex-1 text-white h-10">
-              {editTarget ? 'Save Changes' : 'Register Vehicle'}
-            </button>
-            <button onClick={() => setModalOpen(false)} className="btn-ghost flex-1 h-10">Cancel</button>
+
+          <div>
+            <label className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-1.5 block">Acquisition Cost (₹)</label>
+            <input className="input-field" type="number" value={form.acquisitionCost} onChange={e => setForm({ ...form, acquisitionCost: e.target.value })} placeholder="2500000" />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button onClick={() => setModalOpen(false)} className="btn-ghost flex-1">Cancel</button>
+            <button onClick={handleSave} className="btn-primary flex-1 text-white">{editTarget ? 'Update' : 'Register'}</button>
           </div>
         </div>
       </Modal>

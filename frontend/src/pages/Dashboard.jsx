@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import StatCard from '../components/ui/StatCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import { Truck, Wrench, Activity, Package, ChevronRight, MapPin, Clock } from 'lucide-react';
-import { vehicles, trips, drivers } from '../data/mockData';
+import { analyticsAPI, vehicleAPI, tripAPI, driverAPI } from '../services/api';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 const activityData = [
@@ -25,10 +25,67 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Dashboard() {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dashData, vehiclesData, tripsData, driversData] = await Promise.all([
+          analyticsAPI.getDashboard().catch(err => {
+            console.log('Analytics API error:', err);
+            return null;
+          }),
+          vehicleAPI.getAll().catch(err => {
+            console.log('Vehicles API error:', err);
+            return [];
+          }),
+          tripAPI.getAll().catch(err => {
+            console.log('Trips API error:', err);
+            return [];
+          }),
+          driverAPI.getAll().catch(err => {
+            console.log('Drivers API error:', err);
+            return [];
+          }),
+        ]);
+
+        console.log('Dashboard data:', { dashData, vehiclesData, tripsData, driversData });
+
+        setDashboardData(dashData);
+        setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
+        setTrips(Array.isArray(tripsData) ? tripsData : []);
+        setDrivers(Array.isArray(driversData) ? driversData : []);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setVehicles([]);
+        setTrips([]);
+        setDrivers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Layout title="Command Center" subtitle="Fleet Intelligence Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
   const activeFleet = vehicles.filter(v => v.status === 'On Trip').length;
   const inShop = vehicles.filter(v => v.status === 'In Shop').length;
   const available = vehicles.filter(v => v.status === 'Available').length;
-  const utilization = Math.round((activeFleet / vehicles.length) * 100);
+  const utilization = vehicles.length > 0 ? Math.round((activeFleet / vehicles.length) * 100) : 0;
   const recentTrips = trips.slice(0, 5);
 
   return (
@@ -96,8 +153,8 @@ export default function Dashboard() {
 
           <div className="mt-5 space-y-2">
             <p className="text-xs text-silver-500 uppercase tracking-widest font-mono mb-3">Active Drivers</p>
-            {drivers.filter(d => d.status === 'On Duty').map(driver => (
-              <div key={driver.id} className="flex items-center gap-2.5 py-2 border-b border-white/5 last:border-0">
+            {drivers.filter(d => d.status === 'On Duty').slice(0, 3).map(driver => (
+              <div key={driver._id} className="flex items-center gap-2.5 py-2 border-b border-white/5 last:border-0">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-700 to-obsidian-600 flex items-center justify-center flex-shrink-0">
                   <span className="text-xs font-bold text-white">{driver.name.split(' ').map(n => n[0]).join('')}</span>
                 </div>
@@ -133,17 +190,17 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {recentTrips.map((trip, i) => (
-                <tr key={trip.id} className="table-row" style={{ animationDelay: `${i * 60}ms` }}>
+                <tr key={trip._id} className="table-row" style={{ animationDelay: `${i * 60}ms` }}>
                   <td className="py-3 pr-4">
-                    <span className="text-xs font-mono text-cyan-400">{trip.id}</span>
+                    <span className="text-xs font-mono text-cyan-400">{trip.tripId || trip._id.slice(-6)}</span>
                   </td>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
                       <Truck size={12} className="text-silver-500" />
-                      <span className="text-xs text-silver-300">{trip.vehicle}</span>
+                      <span className="text-xs text-silver-300">{trip.vehicle?.name || trip.vehicle}</span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-xs text-silver-400">{trip.driver}</td>
+                  <td className="py-3 pr-4 text-xs text-silver-400">{trip.driver?.name || trip.driver}</td>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-1 text-xs text-silver-400">
                       <MapPin size={10} className="text-silver-600" />
@@ -153,13 +210,13 @@ export default function Dashboard() {
                     </div>
                   </td>
                   <td className="py-3 pr-4">
-                    <span className="text-xs font-mono text-silver-300">{trip.cargo.toLocaleString()} kg</span>
+                    <span className="text-xs font-mono text-silver-300">{trip.cargo?.toLocaleString()} kg</span>
                   </td>
                   <td className="py-3 pr-4"><StatusBadge status={trip.status} /></td>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-1 text-xs text-silver-500 font-mono">
                       <Clock size={10} />
-                      {trip.date}
+                      {new Date(trip.date || trip.createdAt).toLocaleDateString()}
                     </div>
                   </td>
                 </tr>

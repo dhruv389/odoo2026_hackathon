@@ -5,29 +5,35 @@ const maintenanceSchema = new mongoose.Schema(
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Vehicle",
-      required: true,
+      required: [true, "Vehicle is required"],
     },
-
-    issue: {
+    type: {
       type: String,
-      required: true,
+      required: [true, "Service type is required"],
       trim: true,
     },
-
     date: {
       type: Date,
-      required: true,
+      required: [true, "Service date is required"],
     },
-
     cost: {
       type: Number,
-      required: true,
+      required: [true, "Cost is required"],
+      min: 0,
     },
-
+    tech: {
+      type: String,
+      required: [true, "Technician/Workshop is required"],
+      trim: true,
+    },
+    notes: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
-      enum: ["new", "in_progress", "completed"],
-      default: "new",
+      enum: ["In Progress", "Completed"],
+      default: "In Progress",
     },
   },
   { timestamps: true }
