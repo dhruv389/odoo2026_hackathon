@@ -1,3 +1,120 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1a2030 #07090f;
+  }
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #07090f;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #1a2030;
+    border-radius: 2px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #22d3ee;
+  }
+  body {
+    background: #030508;
+    color: #f0f2f5;
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-obsidian-800/60 backdrop-blur-sm border border-white/[0.05] rounded-xl;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-cyan-500/20 hover:shadow-cyan-500/5;
+  }
+  .silver-text {
+    background: linear-gradient(135deg, #f0f2f5 0%, #8c95a8 50%, #d8dce5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cyan-text {
+    background: linear-gradient(135deg, #22d3ee, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .btn-primary {
+    @apply relative overflow-hidden px-4 py-2 rounded-lg font-body font-medium text-sm transition-all duration-300;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    box-shadow: 0 0 20px rgba(6,182,212,0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(6,182,212,0.5);
+    transform: translateY(-1px);
+  }
+  .btn-ghost {
+    @apply px-4 py-2 rounded-lg font-body font-medium text-sm border border-white/10 text-silver-300 transition-all duration-300 hover:border-cyan-500/40 hover:text-cyan-400 hover:bg-cyan-500/[0.05];
+  }
+  .input-field {
+    @apply w-full bg-obsidian-700/80 border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-silver-100 placeholder-silver-500 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-obsidian-700;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .input-field:focus {
+    box-shadow: 0 0 0 2px rgba(6,182,212,0.15), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .status-online { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/25; }
+  .status-warning { @apply bg-amber-500/15 text-amber-400 border border-amber-500/25; }
+  .status-danger { @apply bg-rose-500/15 text-rose-400 border border-rose-500/25; }
+  .status-inactive { @apply bg-white/[0.05] text-silver-400 border border-white/10; }
+  .status-cyan { @apply bg-cyan-500/15 text-cyan-400 border border-cyan-500/25; }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-silver-400 hover:text-silver-100 hover:bg-white/[0.05];
+  }
+  .nav-item.active {
+    @apply text-cyan-400 bg-cyan-500/10 border border-cyan-500/20;
+  }
+  .table-row {
+    @apply border-b border-white/[0.05] hover:bg-white/[0.03] transition-colors duration-150;
+  }
+
+  .shimmer-line {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite;
+  }
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 150px;
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(34,211,238,0.15); }
+  50% { border-color: rgba(34,211,238,0.4); }
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+@keyframes numberCount {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.count-animate {
+  animation: numberCount 0.6s ease-out forwards;
+}
